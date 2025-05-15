@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}{{ block.super }}{% endblock %}
+
+{% block js %}
+{{ block.super }}
+{% load static %}
+<script type="text/javascript" src="{% get_static_prefix %}js/jquery-1.10.2.min.js"></script>
+<script type="text/javascript" src="{% get_static_prefix %}js/jquery.cookie.js"></script>
+<script type="text/javascript" src="{% get_static_prefix %}js/dotparser.min.js"></script>
+<script type="text/javascript">
+
+function pasteStaticGraph(graph) {
+	var ta = document.getElementById("dotfile");
+	var path = "{% get_static_prefix %}graphs/" + graph;
+
+	$.get(path, function (resp) {
+		ta.value = resp;
+	});
+}
+
+function checkTextArea(form)
+{
+	var content = form.dotfile.value.trim();
+	if (content == "")
+	{
+		form.dotfile.focus();
+		return false;
+	}
+
+	try
+	{
+		if (content.length <= 250000)
+			DotParser.parse(content);
+	}
+	catch (err)
+	{
+		alert("Input is not a valid dot string: '" + err.message + "'");
+		form.dotfile.focus();
+		return false;
+	}
+
+	return true;
+}
+
+function toggleAdvanced(first_load) {
+	var dv = document.getElementById("map_advanced_options");
+	var el = document.getElementById("adv_link");
+
+	if (first_load) {
+		if ($.cookie("show-adv") != '1') return;
+	}
+
+	if (dv.className.indexOf("hide") == -1) {
+		dv.className += " hide";
+		el.innerText = "Show Advanced Options";
+		$.cookie("show-adv", '0', { expires: 1 })
+	}
+	else {
+		dv.className = dv.className.replace(" hide", "");
+		el.innerText = "Hide Advanced Options";
+		$.cookie("show-adv", '1', { expires: 1 })
+	}
+}
+
+$(document).ready(function () {
+  $('input[type=radio]').prop('checked', false);
+
+  $('input[type=radio]').click(function (event) {
+    $('input[type=radio]').prop('checked', false);
+    $(this).prop('checked', true);
+
+    //event.preventDefault();
+  });
+});
+
+</script>
+{% endblock %}
+
+{% block content %}
+<div style="height:115px; margin-top:0px; text-align: center; font:60pt Arial">
+	Hyperbolic Force-directed Graph Layouts
+</div>
+<form method="post" action="{% url 'maps:request_map' %}" accept-charset="UTF-8" onsubmit="return checkTextArea(this)">
+	{% csrf_token %}
+	<div>
+		<div class="wide center">
+			<textarea name="dotfile" id="dotfile" class="wide" spellcheck="false" autofocus="autofocus" maxlength="10000000" placeholder="Paste a DOT file..."></textarea>
+			<div >
+				<font style="color:#999">...or try an example:</font>
+				<a class="small" onclick="pasteStaticGraph('sample.gv')">Sample</a>,
+				<a class="small" onclick="pasteStaticGraph('COLORS_50.gv')">Colors</a>,
+				<a class="small" onclick="pasteStaticGraph('TRADE_150.gv')">TradeLand</a>,
+				<a class="small" onclick="pasteStaticGraph('MUSIC_250.gv')">MusicLand</a>,
+				<a class="small" onclick="pasteStaticGraph('RECIPES_350.gv')">Recipes</a>,
+				<a class="small" onclick="pasteStaticGraph('BOOK_500.gv')">BookLand</a>,
+				<a class="small" onclick="pasteStaticGraph('univ.gv')">Universities</a>
+				<a class="small" onclick="pasteStaticGraph('hyperbolic_colors.dot')">SGD Input</a>
+			</div>
+		</div>
+
+		<div style="margin:10px">
+			<table class="wide center"><tbody>
+					<tr>
+
+						<td style="width: 60%">
+							<div style="text-align: center">
+								<input id='submit' value='Create Map' type='submit' class="btn btn-primary"/>
+							</div>
+						</td>
+					</tr>
+			</tbody></table>
+		</div>
+
+		<div id='map_advanced_options' class="wide center hide">
+			<script>toggleAdvanced(false)</script>
+			<fieldset>
+				<legend>advanced options for map generation</legend>
+
+				<div style="width: 50%; float:left;">
+
+					<label for='layout_algorithm' class="labelAdvanced">Layout Algorithm:</label>
+					<select name="layout_algorithm" id="layout_algorithm">
+						<option value="SGD" selected='selected'>SGD</option>
+						<option value="neato">Tangent force-directed (neato)</option>
+					</select><br>
+
+					<label for='iterations' class="labelAdvanced">Iterations:</label>
+					<select name="iterations" id="iterations">
+						<optgroup label="SGD">
+							<option value="15">15</option>
+							<option value="20">20</option>
+							<option value="30">30</option>
+							<option value="40">40</option>
+							<option value="50">50</option>
+							<option value="100">100</option>
+						</optgroup>
+						<optgroup label="FDA">
+						</optgroup>
+					</select><br>
+				</div>
+
+				<div style="width: 50%; float:right;">
+
+					<label for='convergence' class="labelAdvanced">Iterate until convergence?</label>
+					<input type="radio" id='convergence' name="convergence" value="true" /><br>
+					<label for='opt_alpha' class="labelAdvanced">Optimize scale?</label>
+					<input type="radio" id='opt_alpha' name="opt_alpha" value="true" /><br>
+				</div>
+			</fieldset>
+		</div>
+	</div>
+
+</form>
+{% endblock %}
