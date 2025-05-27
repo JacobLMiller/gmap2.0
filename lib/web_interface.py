@@ -18,11 +18,11 @@ def create_task(task_parameters, user_ip):
 	task.input_dot = task_parameters['dotfile']
 	task.vis_type = "Gmap"
 	task.layout_algorithm = task_parameters['layout_algorithm']
-	task.iterations = task_parameters['iterations']
-	task.opt_alpha = task_parameters.get('opt_alpha', 'false')
-	task.hyperbolic_projection = task_parameters.get('hyperbolic','false')
+	# task.iterations = task_parameters['iterations']
+	# task.opt_alpha = task_parameters.get('opt_alpha', 'false')
+	# task.hyperbolic_projection = task_parameters.get('hyperbolic','false')
 	task.color_scheme = "blue" #task_parameters['color_scheme']
-	task.convergence = task_parameters.get('convergence', 'false')
+	# task.convergence = task_parameters.get('convergence', 'false')
 	task.status = 'created'
 
 	task.save()

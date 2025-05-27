@@ -87,18 +87,20 @@ MIME_TYPES = {
 def display_map(request, task_id, format = ''):
 	if request.method == 'GET':
 		task = get_object_safe(task_id, 10)
+		print("I am trying to display map")
 
 		if format == '':
-			if task.layout_algorithm == 'SGD':
-				return render(request,'maps/SGD_display.html',{'task':task})
-			elif task.layout_algorithm == 'neato':
-				return render(request,'maps/hyperbolic.html',{'task':task})
+			# if task.layout_algorithm == 'SGD':
+			# 	return render(request,'maps/SGD_display.html',{'task':task})
+			# elif task.layout_algorithm == 'neato':
+			# 	return render(request,'maps/hyperbolic.html',{'task':task})
 			# return render(request, 'maps/hyperbolic.html',{'task': task});
 			# if task.contiguous_algorithm == 'true':
 			# 	return render(request, 'maps/spherical.html', {'task': task})
 			# elif task.hyperbolic_projection == 'true':
 			# 	return render(request, 'maps/hyperbolic.html',{'task': task})
-			# return render(request, 'maps/map.html', {'task': task})
+			print(task)
+			return render(request, 'maps/map.html', {'task': task})
 		else:
 			if format in MIME_TYPES:
 				content = get_formatted_map(task, format)
@@ -112,9 +114,10 @@ def get_json(request, task_id):
 	if request.method == 'GET':
 		task = Task.objects.get(id = task_id)
 		#print(task.description())
-		#dot_graph = nx_agraph.from_agraph(pygraphviz.AGraph(task.dot_rep))
-		#graph_json = json.dumps(json_graph.node_link_data(dot_graph))
-		graph_json = json.dumps(task.dot_rep)
+		dot_graph = nx_agraph.from_agraph(pygraphviz.AGraph(task.dot_rep))
+		print(task.dot_rep)
+		graph_json = json.dumps(json_graph.node_link_data(dot_graph))
+		# graph_json = json.dumps(task.dot_rep)
 
 		return HttpResponse(graph_json, content_type='application/json')
 
@@ -129,10 +132,12 @@ def get_json(request, task_id):
 def get_task_metadata(request, task_id):
 	if request.method == "GET":
 		task = Task.objects.get(id=task_id)
+		print(task.json_metadata())
 		return HttpResponse(task.json_metadata(), content_type='application/json')
 
 def get_map(request, task_id):
 	if request.method == 'GET':
+		print(task_id)
 		task = Task.objects.get(id = task_id)
 		return HttpResponse(u'%s' % task.svg_rep)
 

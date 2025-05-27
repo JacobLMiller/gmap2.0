@@ -19,10 +19,13 @@ def graphviz_command_layout(alg='sfdp'):
 	temp = "%s -Goverlap=prism -Goutputorder=edgesfirst -Gsize=60,60!" % (alg)
 	return temp
 
+#TODO this is where is currently fails
 def graphviz_command_gmap(color_scheme):
-    if color_scheme == 'bubble-sets':
-    	return "gvmap -e  -s -4"
-    return "gvmap -e  -s -4 -c %s" % (color_scheme)
+	# color_scheme = "pastel"
+	if color_scheme == 'bubble-sets':
+		return "gvmap -e  -s -4"
+	print("gvmap -e  -s -4 -c %s" % (color_scheme))
+	return "gvmap -e  -s -4 -c %s" % (color_scheme)
 
 def graphviz_command_draw(file_format='svg'):
     return "neato -Gforcelabels=false -Ecolor=grey  -Gsize=60,60! -n2 -T%s" % (file_format)
@@ -92,6 +95,7 @@ def run_layout(task, layout_algorithm, map_string):
 	return process
 
 def run_clustering(task, cluster_algorithm, dot_out):
+	cluster_algorithm = "k-means"
 	if cluster_algorithm == 'graph':
 		return dot_out
 	if cluster_algorithm == 'cont-graph':
@@ -125,90 +129,91 @@ def run_color_assignment(task, dot_out):
 	return call_process(colors_command(), dot_out)
 
 def call_graphviz_int(task):
+	map_string = task.input_dot
+	vis_type = task.vis_type.lower().strip()
 	layout_algorithm = task.layout_algorithm
+	cluster_algorithm = task.cluster_algorithm
+	print(f"my cluster algo is {task.cluster_algorithm}")
+	print("I am trying to call graphviz")
+	print(vis_type)
+	if vis_type == 'node-link':
+		# pipeline with no clustering
+		dot_out = run_layout(task, layout_algorithm, map_string)
+		svg_out = get_graphviz_map(dot_out, 'svg')
+		return dot_out, svg_out
 
-	if task.layout_algorithm == 'SGD':
-		return call_hmds(task)
-	elif task.layout_algorithm == 'neato':
-		return task.input_dot
+	elif vis_type == 'gmap':
+		# default pipeline
+		print("my vist_type is gmap")
+		dot_out = run_layout(task, layout_algorithm, map_string)
 
-	# if vis_type == 'node-link':
-	# #pipeline with no clustering
-	# 	dot_out = run_layout(task, layout_algorithm, map_string)
-	#
-	# 	svg_out = get_graphviz_map(dot_out, 'svg')
-	# 	return dot_out, svg_out
-	# elif vis_type == 'gmap':
-	# 	#default pipeline
-	#
-	# 	dot_out = run_layout(task, layout_algorithm, map_string)
-	# 	dot_out = run_clustering(task, cluster_algorithm, dot_out)
-	# 	dot_out = call_process(graphviz_command_gmap(task.color_scheme), dot_out)
-	# 	if task.color_scheme == 'bubble-sets':
-	# 		dot_out = run_color_assignment(task, dot_out)
-	#
-	#
-	# 	set_status(task, 'map construction')
-	# 	svg_out = get_graphviz_map(dot_out, 'svg')
-	#
-	# 	return dot_out, svg_out
-	#
-	# elif vis_type == 'point-cloud':
-	# 	dot_out = run_layout(task, layout_algorithm, map_string)
-	# 	dot_out = run_clustering(task, cluster_algorithm, dot_out)
-	# 	dot_out = call_process(graphviz_command_gmap(task.color_scheme), dot_out)
-	# 	if task.color_scheme == 'bubble-sets':
-	# 		dot_out = run_color_assignment(task, dot_out)
-	#
-	# 	set_status(task, 'point cloud construction')
-	# 	dot_out = call_process(pointcloud_command(), dot_out)
-	#
-	# 	svg_out = get_graphviz_map(dot_out, 'svg')
-	# 	return dot_out, svg_out
-	#
-	# elif vis_type == 'bubble-sets':
-	# 	dot_out = run_layout(task, layout_algorithm, map_string)
-	# 	dot_out = run_clustering(task, cluster_algorithm, dot_out)
-	# 	dot_out = call_process(graphviz_command_gmap(task.color_scheme), dot_out)
-	# 	if task.color_scheme == 'bubble-sets':
-	# 		dot_out = run_color_assignment(task, dot_out)
-	#
-	# 	set_status(task, 'creating bubble sets')
-	# 	dot_out = call_process(bubblesets_command(), dot_out)
-	#
-	# 	svg_out = get_graphviz_map(dot_out, 'svg')
-	# 	return dot_out, svg_out
-	#
-	# elif vis_type == 'line-sets':
-	# 	dot_out = run_layout(task, layout_algorithm, map_string)
-	# 	dot_out = run_clustering(task, cluster_algorithm, dot_out)
-	# 	dot_out = call_process(graphviz_command_gmap(task.color_scheme), dot_out)
-	# 	if task.color_scheme == 'bubble-sets':
-	# 		dot_out = run_color_assignment(task, dot_out)
-	#
-	# 	set_status(task, 'creating line sets')
-	# 	dot_out = call_process(linesets_command(), dot_out)
-	#
-	# 	svg_out = get_graphviz_map(dot_out, 'svg')
-	# 	return dot_out, svg_out
-	#
-	# elif vis_type == 'map-sets':
-	# 	dot_out = run_layout(task, layout_algorithm, map_string)
-	# 	dot_out = run_clustering(task, cluster_algorithm, dot_out)
-	# 	# running ceba
-	# 	#if not cluster_algorithm.startswith('cont-'):
-	# 	#	set_status(task, 'making map contiguous')
-	# 	#	dot_out = call_process(ceba_command(), dot_out)
-	#
-	# 	set_status(task, 'creating map sets')
-	# 	#log.debug('MapSets-Input: %s' %(dot_out))
-	# 	dot_out = call_process(mapsets_command(), dot_out)
-	# 	dot_out = call_process(mapsets_post_command(task.color_scheme), dot_out)
-	# 	if task.color_scheme == 'bubble-sets':
-	# 		dot_out = run_color_assignment(task, dot_out)
-	#
-	# 	svg_out = get_graphviz_map(dot_out, 'svg')
-	# 	return dot_out, svg_out
+		dot_out = run_clustering(task, cluster_algorithm, dot_out)
+		print(dot_out)
+		dot_out = call_process(graphviz_command_gmap(task.color_scheme), dot_out)
+		if task.color_scheme == 'bubble-sets':
+			dot_out = run_color_assignment(task, dot_out)
+
+		set_status(task, 'map construction')
+		svg_out = get_graphviz_map(dot_out, 'svg')
+		return dot_out, svg_out
+
+	elif vis_type == 'point-cloud':
+		dot_out = run_layout(task, layout_algorithm, map_string)
+		dot_out = run_clustering(task, cluster_algorithm, dot_out)
+		dot_out = call_process(graphviz_command_gmap(task.color_scheme), dot_out)
+		if task.color_scheme == 'bubble-sets':
+			dot_out = run_color_assignment(task, dot_out)
+
+		set_status(task, 'point cloud construction')
+		dot_out = call_process(pointcloud_command(), dot_out)
+
+		svg_out = get_graphviz_map(dot_out, 'svg')
+		return dot_out, svg_out
+
+	elif vis_type == 'bubble-sets':
+		dot_out = run_layout(task, layout_algorithm, map_string)
+		dot_out = run_clustering(task, cluster_algorithm, dot_out)
+		dot_out = call_process(graphviz_command_gmap(task.color_scheme), dot_out)
+		if task.color_scheme == 'bubble-sets':
+			dot_out = run_color_assignment(task, dot_out)
+
+		set_status(task, 'creating bubble sets')
+		dot_out = call_process(bubblesets_command(), dot_out)
+
+		svg_out = get_graphviz_map(dot_out, 'svg')
+		return dot_out, svg_out
+
+	elif vis_type == 'line-sets':
+		dot_out = run_layout(task, layout_algorithm, map_string)
+		dot_out = run_clustering(task, cluster_algorithm, dot_out)
+		dot_out = call_process(graphviz_command_gmap(task.color_scheme), dot_out)
+		if task.color_scheme == 'bubble-sets':
+			dot_out = run_color_assignment(task, dot_out)
+
+		set_status(task, 'creating line sets')
+		dot_out = call_process(linesets_command(), dot_out)
+
+		svg_out = get_graphviz_map(dot_out, 'svg')
+		return dot_out, svg_out
+
+	elif vis_type == 'map-sets':
+		dot_out = run_layout(task, layout_algorithm, map_string)
+		dot_out = run_clustering(task, cluster_algorithm, dot_out)
+		# running ceba
+		# if not cluster_algorithm.startswith('cont-'):
+		# 	set_status(task, 'making map contiguous')
+		# 	dot_out = call_process(ceba_command(), dot_out)
+
+		set_status(task, 'creating map sets')
+		# log.debug('MapSets-Input: %s' %(dot_out))
+		dot_out = call_process(mapsets_command(), dot_out)
+		dot_out = call_process(mapsets_post_command(task.color_scheme), dot_out)
+		if task.color_scheme == 'bubble-sets':
+			dot_out = run_color_assignment(task, dot_out)
+
+		svg_out = get_graphviz_map(dot_out, 'svg')
+		return dot_out, svg_out
+
 
 
 def get_graphviz_map(map_string, file_format):

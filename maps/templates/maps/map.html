@@ -42,6 +42,7 @@ function get_map(delay) {
         timeout: 300000,
         success: function(task) {
         	if (task.status == 'completed') {
+                console.log("task completed")
         		if (task.semantic_zoom == 'false')
         		{
 	            	display_map("{% url 'maps:get_map' task.id %}", task.width, task.height);
@@ -57,6 +58,7 @@ function get_map(delay) {
                 $('#status').hide();
             }
             else {
+                console.log(task)                
             	$('#status_text').html('Status: ' + task.status);
             	if (task.status.indexOf("error") != 0)
 	                setTimeout(get_map, delay, Math.min(delay*2, 5000));

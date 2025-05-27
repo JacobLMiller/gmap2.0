@@ -1,0 +1,3 @@
+gmap.db
+*__pycache__/
+*migrations/

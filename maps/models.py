@@ -22,12 +22,11 @@ class Task(models.Model):
 
     vis_type = models.CharField(max_length=64)
     layout_algorithm = models.CharField(max_length=64)
-    iterations = models.CharField(max_length=64)
-    opt_alpha = models.CharField(max_length=64)
-    hyperbolic_projection = models.CharField(max_length=64)
+    cluster_algorithm = models.CharField(max_length=64)
+    contiguous_algorithm = models.CharField(max_length=64)
 
     color_scheme  = models.CharField(max_length=64)
-    convergence  = models.CharField(max_length=64)
+    semantic_zoom  = models.CharField(max_length=64)
 
     def metadata(self):
         return {
@@ -35,6 +34,7 @@ class Task(models.Model):
             'status': self.status,
             'width': self.width,
             'height': self.height,
+            'semantic_zoom': self.semantic_zoom,
         }
 
     def json_metadata(self):
@@ -47,6 +47,4 @@ class Task(models.Model):
         desc += 'Cluster Algorithm: ' + self.cluster_algorithm + '\n'
         desc += 'Color Scheme: ' + self.color_scheme + '\n'
         desc += 'Semantic Zoom: ' + self.semantic_zoom + '\n'
-        desc += 'status: ' + self.status + '\n'
-
         return desc
