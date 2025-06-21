@@ -1,3 +1,4 @@
-Django=3.2
-numpy
-numba=0.53.1
+Django==5.2.1
+numba==0.61.2
+pygraphviz
+networkx

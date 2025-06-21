@@ -2,9 +2,9 @@ GMap: Graph-to-Map
 ================
 GMap is a system for visualizing graphs as maps.
 
-
 Basic Setup
 --------
+      source venv/bin/activate
 
 1. Install the python dependencies listed using pip:
 

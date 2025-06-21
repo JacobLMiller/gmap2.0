@@ -14,6 +14,7 @@
 
 <script type="text/javascript">
 $(document).ready(function() {
+    console.log('Document ready');
 	get_map(100);
     $('#opacity-slider').slider({ 
          max:100,
@@ -33,6 +34,7 @@ var SVG_ZOOM_LEVELS = 4;
 var VIEW_ZOOM_LEVELS = 5;
 
 function get_map(delay) {
+    console.log('Calling get_map with delay', delay);
     $.ajax({
         dataType: "json",
         type: "GET",
@@ -41,75 +43,81 @@ function get_map(delay) {
         cache: false,
         timeout: 300000,
         success: function(task) {
+            console.log('AJAX success, task:', task);
         	if (task.status == 'completed') {
                 console.log("task completed")
-        		if (task.semantic_zoom == 'false')
-        		{
-	            	display_map("{% url 'maps:get_map' task.id %}", task.width, task.height);
-	            }
-	            else
-	            {
-	            	var urls = new Array();
-	            	for (var i = 0; i < SVG_ZOOM_LEVELS; i++)
-	            		urls.push("{% url 'maps:get_map_zoomed' task.id %}?zoom=" + i);
-
-	            	display_map_with_zoom(urls, task.width, task.height);
-	            }
+                if (task.semantic_zoom === 'false' ) // || task.semantic_zoom === ""
+                {
+                    console.log('Calling display_map with', "{% url 'maps:get_map' task.id %}", task.width, task.height);
+                    display_map("{% url 'maps:get_map' task.id %}", task.width, task.height);
+                }
+                else
+                {
+                    var urls = [];
+                    for (var i = 0; i < SVG_ZOOM_LEVELS; i++) {
+                        var url = "{% url 'maps:get_map_zoomed' task.id %}?zoom=" + i;
+                        console.log('Adding zoomed url:', url);
+                        urls.push(url);
+                    }
+                    console.log('Calling display_map_with_zoom with', urls, task.width, task.height);
+                    display_map_with_zoom(urls, task.width, task.height);
+                }
                 $('#status').hide();
             }
             else {
-                console.log(task)                
-            	$('#status_text').html('Status: ' + task.status);
-            	if (task.status.indexOf("error") != 0)
-	                setTimeout(get_map, delay, Math.min(delay*2, 5000));
-	            else
-		            $('#status_indicator').hide();
+                console.log('Task not completed:', task)
+                $('#status_text').html('Status: ' + task.status);
+                if (task.status.indexOf("error") != 0)
+                    setTimeout(get_map, delay, Math.min(delay*2, 5000));
+                else
+                    $('#status_indicator').hide();
             }
         },
         // handle error
         error: function(XMLHttpRequest, textStatus, errorThrown) {
-        	//alert(textStatus + " " + errorThrown);
+            console.log('AJAX error', textStatus, errorThrown);
             // try again in 10 seconds if there was a request error
             setTimeout(get_map, delay, Math.min(delay*2, 5000));
         },
     });
 }
 
-function display_map(map_url, width, height) {
-	var scale0 = Math.max(height/(window.innerHeight - 80), width/(window.innerWidth));
-	var S = 0.7;
-	var res = [scale0];
-	for (var i = 1; i < VIEW_ZOOM_LEVELS; i++)
-		res.push(res[i-1] * S);
-
-    var bounds = new OpenLayers.Bounds(0, -1 * height, width, 0);
-    map_options = {
-        controls:[
-            new OpenLayers.Control.Navigation(),
-            new OpenLayers.Control.PanZoomBar(),
-                ],
-        //maxExtent: bounds,
-        //minExtent: new OpenLayers.Bounds(0, -1 * height/2, width/2, 0),
-        //numZoomLevels: 6,
-        fractionalZoom: true,
-        resolutions: res,
-    }
-    map = new OpenLayers.Map("map", map_options);
-
-    var gmap = new OpenLayers.Layer.ScalableInlineXhtml(
-        "GMap",
-        map_url,
-        bounds,
-        null,
-        {isBaseLayer: true, opacity: '1.0'});
-
-    var svg = $('svg');
-    gmap.adjustBounds(bounds);
-    map.addLayers([gmap]);
-    map.zoomToExtent(bounds);
-} 
+function display_map(url, width, height) {
+    console.log('display_map called with url:', url, 'width:', width, 'height:', height);
+    // Remove any previous SVG
+    $('#svg_map').remove();
+    // Fetch the SVG and insert it into the DOM
+    $.ajax({
+        url: url,
+        type: 'GET',
+        dataType: 'text',
+        success: function(svg) {
+            console.log('SVG fetched:', svg.substring(0, 200)); // Log first 200 chars
+            var container = document.getElementById('map_container');
+            if (!container) {
+                console.log('No #map_container found, creating one.');
+                container = document.createElement('div');
+                container.id = 'map_container';
+                document.body.appendChild(container);
+            }
+            container.innerHTML = svg;
+            // Optionally set width/height if needed
+            if (width && height) {
+                var svgElem = container.querySelector('svg');
+                if (svgElem) {
+                    svgElem.setAttribute('width', width);
+                    svgElem.setAttribute('height', height);
+                }
+            }
+        },
+        error: function(xhr, status, error) {
+            console.log('Error fetching SVG:', status, error);
+        }
+    });
+}
 
 function display_map_with_zoom(map_urls, width, height) {
+    console.log('display_map_with_zoom called with', map_urls, width, height);
 	var scale0 = Math.max(height/(window.innerHeight - 80), width/(window.innerWidth));
 	var S = 0.7;
 	var res = [scale0];
@@ -127,17 +135,19 @@ function display_map_with_zoom(map_urls, width, height) {
         fractionalZoom: true,
         resolutions: res,
     }
+    console.log('Creating OpenLayers.Map with options', map_options);
     map = new OpenLayers.Map ("map", map_options);
 
     var gmaps = new Array();
     for (var i = 0; i < SVG_ZOOM_LEVELS; i++)
     {
+        console.log('Adding ScalableInlineXhtml layer', map_urls[i]);
 	    var gmap = new OpenLayers.Layer.ScalableInlineXhtml(
 	        "GMap",
-    	    map_urls[i],
-        	bounds,
+	    	map_urls[i],
+	    	bounds,
 	        null,
-    	    {isBaseLayer: true, opacity: '1.0'});
+	    	{isBaseLayer: true, opacity: '1.0'});
 	    gmap.adjustBounds(bounds);
 
 	    gmaps.push(gmap);
@@ -160,8 +170,8 @@ function display_map_with_zoom(map_urls, width, height) {
 	    zoom = getZoomSafe(0, gmaps.length - 1, map.getZoom());
 		gmaps[zoom].setVisibility(true);
 	});
-
-} 
+    console.log('display_map_with_zoom finished');
+}
 
 function getZoomSafe(lower, upper, value)
 {

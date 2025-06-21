@@ -56,21 +56,29 @@ def recent(request):
 
 
 def request_map(request):
+	log.debug(f"request_map called with method: {request.method}")
 	if request.method == 'POST':
 		try:
+			#log.debug(f"POST data: {dict(request.POST.items())}")
 			task = create_task(dict(request.POST.items()), request.META.get('REMOTE_ADDR', ''))
+			log.debug(f"Task created with ID: {task.id if hasattr(task, 'id') else 'unknown'}")
 			try:
-				#thread.start_new_thread(create_map, (task, 1))
 				import threading
+				log.debug(f"Starting create_map thread for task ID: {task.id if hasattr(task, 'id') else 'unknown'}")
 				threading.Thread(target=create_map,
-			        args=(task,1),
-			    ).start()
+				    args=(task,1),
+				).start()
 			except Exception as e:
+				log.error(f"Thread start error: {str(e)}")
 				print ('thread-error: ' + str(e))
 			return redirect('/map/' + str(task.id) + '/')
 		except CallExternalException as e:
+			log.error(f"CallExternalException: {str(e)}")
 			return render(request, 'maps/error.html', {'msg': str("<br />".join(str(e).split("\n")))})
-
+		log.debug(f"Task creation and threading completed for task ID: {task.id if hasattr(task, 'id') else 'unknown'}")
+		return redirect('/map/' + str(task.id) + '/')
+	log.debug("request_map did not process POST request")
+	return render(request, 'maps/error.html', {'msg': 'Invalid request method.'})
 
 MIME_TYPES = {
     'pdf': 'application/pdf',
@@ -99,7 +107,8 @@ def display_map(request, task_id, format = ''):
 			# 	return render(request, 'maps/spherical.html', {'task': task})
 			# elif task.hyperbolic_projection == 'true':
 			# 	return render(request, 'maps/hyperbolic.html',{'task': task})
-			print(task)
+			print("task is printed")
+			print(task.json_metadata())
 			return render(request, 'maps/map.html', {'task': task})
 		else:
 			if format in MIME_TYPES:
@@ -139,23 +148,32 @@ def get_map(request, task_id):
 	if request.method == 'GET':
 		print(task_id)
 		task = Task.objects.get(id = task_id)
-		return HttpResponse(u'%s' % task.svg_rep)
+		return HttpResponse(u'%s' % task.svg_rep, content_type="image/svg+xml")
 
 import logging
 log = logging.getLogger('gmap_web')
 
 def get_map_zoomed(request, task_id):
-	if request.method == 'GET':
-		zoom = request.GET.get('zoom', '3')
-		task = get_object_safe(task_id, 10)
-		if zoom == '0':
-			return HttpResponse(u'%s' % task.svg_rep0)
-		elif zoom == '1':
-			return HttpResponse(u'%s' % task.svg_rep1)
-		elif zoom == '2':
-			return HttpResponse(u'%s' % task.svg_rep2)
-		elif zoom == '3':
-			return HttpResponse(u'%s' % task.svg_rep3)
+    if request.method == 'GET':
+        log.debug(f"get_map_zoomed called for task_id={task_id}")
+        zoom = request.GET.get('zoom', '3')
+        log.debug(f"Requested zoom level: {zoom}")
+        task = get_object_safe(task_id, 10)
+        svg = None
+        if zoom == '0':
+            svg = getattr(task, 'svg_rep0', None)
+        elif zoom == '1':
+            svg = getattr(task, 'svg_rep1', None)
+        elif zoom == '2':
+            svg = getattr(task, 'svg_rep2', None)
+        elif zoom == '3':
+            svg = getattr(task, 'svg_rep3', None)
+        log.debug(f"SVG for zoom {zoom}: {'set' if svg else 'not set'}; length: {len(svg) if svg else 0}")
+        if not svg:
+            log.warning(f"No SVG found for zoom {zoom}, returning empty SVG.")
+            # Return a minimal valid SVG if missing, to avoid XML parsing errors
+            return HttpResponse('<svg xmlns="http://www.w3.org/2000/svg"></svg>', content_type="image/svg+xml")
+        return HttpResponse(svg, content_type="image/svg+xml")
 
 def get_object_safe(task_id, attempt):
 	if attempt <= 0:

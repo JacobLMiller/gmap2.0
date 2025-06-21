@@ -21,10 +21,10 @@ def graphviz_command_layout(alg='sfdp'):
 
 #TODO this is where is currently fails
 def graphviz_command_gmap(color_scheme):
-	# color_scheme = "pastel"
+	color_scheme = "1"
 	if color_scheme == 'bubble-sets':
 		return "gvmap -e  -s -4"
-	print("gvmap -e  -s -4 -c %s" % (color_scheme))
+	print("printing gvmap")
 	return "gvmap -e  -s -4 -c %s" % (color_scheme)
 
 def graphviz_command_draw(file_format='svg'):
@@ -32,28 +32,28 @@ def graphviz_command_draw(file_format='svg'):
 
 def graphviz_command_scale(s1, s2):
     script = CURPATH + "/external/utils/change_size.gvpr"
-    return "gvpr -c -a %s -f %s | neato -Gsize=%s! -Ecolor=grey -n2 -Tsvg" % (s1, script, s2)
+    return 'gvpr -c -a %s -f "%s" | neato -Gsize=%s! -Ecolor=grey -n2 -Tsvg' % (s1, script, s2)
 
 def cluster_command(alg):
-    return CURPATH + "/external/eba/kmeans -action=clustering -C=%s" % (alg)
+    return '"%s/external/eba/kmeans" -action=clustering -C=%s' % (CURPATH, alg)
 
 def ceba_command():
-    return "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:" + CURPATH + "/external/ecba/libraries/tulip/install/lib; " + CURPATH + "/external/ecba/build/Exec -p -r"
+    return 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:"%s/external/ecba/libraries/tulip/install/lib"; "%s/external/ecba/build/Exec" -p -r' % (CURPATH, CURPATH)
 
 def bubblesets_command():
     script = CURPATH + "/external/BubbleSets.jar"
-    return "java -cp " + script + " setvis.Main -p -r"
+    return 'java -cp "%s" setvis.Main -p -r' % script
 
 def colors_command():
     script = CURPATH + "/external/BubbleSets.jar"
-    return "java -cp " + script + " setvis.Main -p -r -c"
+    return 'java -cp "%s" setvis.Main -p -r -c' % script
 
 def linesets_command():
     script = CURPATH + "/external/LineSets.jar"
-    return "java -cp " + script + " setvis.Main -p -r"
+    return 'java -cp "%s" setvis.Main -p -r' % script
 
 def mapsets_command():
-    return CURPATH + "/external/mapsets/mapsets"
+    return '"%s/external/mapsets/mapsets"' % CURPATH
 
 def mapsets_post_command(color_scheme):
     if color_scheme == 'bubble-sets':
@@ -61,27 +61,33 @@ def mapsets_post_command(color_scheme):
     return "gvmap -e -a 0 -s 200 -c %s" % (color_scheme)
 
 def pointcloud_command():
-    return CURPATH + "/external/pointcloud/pointcloud"
+    return '"%s/external/pointcloud/pointcloud"' % CURPATH
 
 
 def removeNonAscii(s): return "".join(i for i in s if ord(i)<128)
 
 def call_process(gv_command, map_string, raw_output = False, encoding='utf8'):
-	proc = Popen(gv_command, stdout=PIPE, stdin=PIPE, stderr=PIPE, shell=True)
-	dot_out, map_err = proc.communicate(input = removeNonAscii(map_string).encode())
-	if map_err:
-		print(map_err)
-	if proc.returncode != 0:
-		raise CallExternalException(map_err)
-	if raw_output:
-		return dot_out
-	return removeNonAscii(dot_out.decode())
+    print(f"Executing command: {gv_command}")  # Add command logging
+    proc = Popen(gv_command, stdout=PIPE, stdin=PIPE, stderr=PIPE, shell=True)
+    dot_out, map_err = proc.communicate(input = removeNonAscii(map_string).encode())
+    if map_err:
+        print(map_err)
+    if proc.returncode != 0:
+        # decode map_err if it's bytes
+        if isinstance(map_err, bytes):
+            map_err = map_err.decode(errors='replace')
+        raise CallExternalException(map_err)
+    if raw_output:
+        return dot_out
+    return removeNonAscii(dot_out.decode())
 
 def call_graphviz(task):
 	try:
 		return call_graphviz_int(task)
 	except Exception as e:
-		set_status(task, 'error<br>' + str(e))
+		# ensure e is always a string
+		err_str = e.decode(errors='replace') if isinstance(e, bytes) else str(e)
+		set_status(task, 'error<br>' + err_str)
 		return None, None
 
 def run_layout(task, layout_algorithm, map_string):
@@ -146,9 +152,7 @@ def call_graphviz_int(task):
 		# default pipeline
 		print("my vist_type is gmap")
 		dot_out = run_layout(task, layout_algorithm, map_string)
-
 		dot_out = run_clustering(task, cluster_algorithm, dot_out)
-		print(dot_out)
 		dot_out = call_process(graphviz_command_gmap(task.color_scheme), dot_out)
 		if task.color_scheme == 'bubble-sets':
 			dot_out = run_color_assignment(task, dot_out)

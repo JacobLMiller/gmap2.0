@@ -108,46 +108,28 @@ STATIC_URL = '/static/'
 
 LOGGING = {
     'version': 1,
-    'disable_existing_loggers': True,
+    'disable_existing_loggers': False,
     'formatters': {
-        'standard': {
-            'format' : "[%(asctime)s] %(levelname)s [%(name)s:%(lineno)s] %(message)s",
-            'datefmt' : "%d/%b/%Y %H:%M:%S"
+        'verbose': {
+            'format': '%(asctime)s %(levelname)s %(name)s %(message)s',
         },
     },
     'handlers': {
-        'null': {
-            'level':'DEBUG',
-            'class':'logging.NullHandler',
-        },
-        'logfile': {
-            'level':'DEBUG',
-            'class':'logging.handlers.RotatingFileHandler',
-            'filename': os.path.join(BASE_DIR, 'logfile.txt'),
-            'maxBytes': 5000000,
-            'backupCount': 2,
-            'formatter': 'standard',
-        },
-        'console':{
-            'level':'INFO',
-            'class':'logging.StreamHandler',
-            'formatter': 'standard'
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
         },
     },
     'loggers': {
-        'django': {
-            'handlers':['console'],
-            'propagate': True,
-            'level':'WARN',
-        },
-        'django.db.backends': {
+        'gmap_web': {
             'handlers': ['console'],
             'level': 'DEBUG',
-            'propagate': False,
+            'propagate': True,
         },
-        'gmap_web': {
-            'handlers': ['console', 'logfile'],
-            'level': 'DEBUG',
+        '': {  # root logger
+            'handlers': ['console'],
+            'level': 'WARNING',
         },
-    }
+    },
 }
