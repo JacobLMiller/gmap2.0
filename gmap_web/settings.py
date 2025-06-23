@@ -54,9 +54,11 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
 	'maps',
 	'lib',
+    'corsheaders',
 )
 
 MIDDLEWARE_CLASSES = (
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     #'django.middleware.csrf.CsrfViewMiddleware',
@@ -133,3 +135,11 @@ LOGGING = {
         },
     },
 }
+
+# CORS settings
+CORS_ALLOW_ALL_ORIGINS = True
+# For production, use:
+# CORS_ALLOWED_ORIGINS = [
+#     'http://localhost:8000',
+#     'http://127.0.0.1:8000',
+# ]

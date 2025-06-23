@@ -2,3 +2,4 @@ Django==5.2.1
 numba==0.61.2
 pygraphviz
 networkx
+django-cors-headers
